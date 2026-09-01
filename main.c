@@ -1,7 +1,10 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "driver.h"
+#include "sram_test.h"
+
 #include <stdio.h>
+
 
 #define FOSC 4915200UL
 #define BAUD 9600
@@ -13,15 +16,31 @@ int main(void)
 
 	fdevopen(uart_putchar, uart_getchar);
 
-    while (1)
-    {
-		//USART_Transmit('A');
-        //printf("Hello world!\r\n");
-		int data;
-		data = USART_Receive();
-		USART_Transmit(data);
-        _delay_ms(1000);
-    }
+    // while (1)
+    // {
+	// 	//USART_Transmit('A');
+    //     printf("Hello world!\r\n");
+	// 	// int data;
+	// 	// data = USART_Receive();
+	// 	// USART_Transmit(data);
+    //     _delay_ms(1000);
+    // }
+
+	// Enable external memory interface
+    MCUCR |= (1 << SRE);
+	SFIOR |= (0 << XMM0);
+	SFIOR |= (0 << XMM1);
+	SFIOR |= (1 << XMM2);
+
+	//Fikse RESET
+
+
+    // while (1)
+    // {
+    //     *(volatile uint8_t *)0x1055 = 0x0;
+    // }
+
+	SRAM_test();
 
 }
 
