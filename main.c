@@ -16,15 +16,6 @@ int main(void)
 
 	fdevopen(uart_putchar, uart_getchar);
 
-    // while (1)
-    // {
-	// 	//USART_Transmit('A');
-    //     printf("Hello world!\r\n");
-	// 	// int data;
-	// 	// data = USART_Receive();
-	// 	// USART_Transmit(data);
-    //     _delay_ms(1000);
-    // }
 
 	// Enable external memory interface
     MCUCR |= (1 << SRE);
@@ -32,15 +23,32 @@ int main(void)
 	SFIOR |= (0 << XMM1);
 	SFIOR |= (1 << XMM2);
 
-	//Fikse RESET
+
+	// Set up clock signal generation to ADC
+	DDRD |= (1 << PD5); // Set PDX as output
+	TCCR1A |= (1 << COM1A0) ; // Toggle OC1A on Compare Match
+	TCCR1B |= (1 << WGM12) | (1 << CS10); // No prescaling (table 57)
+	OCR1A = 0;
 
 
+	while (1)
+    {
+		int data;
+		data = USART_Receive();
+		printf("%d", data);
+    }
+
+
+	//
     // while (1)
     // {
-    //     *(volatile uint8_t *)0x1055 = 0x0;
+    //    *(volatile uint8_t *)0x1800 = 0x0;
     // }
+	//SRAM_test();
+// 
 
-	SRAM_test();
 
 }
 
+
+// sudo picocom -b 9600 /dev/ttyS4
