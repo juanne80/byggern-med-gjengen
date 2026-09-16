@@ -2,6 +2,7 @@
 #include <util/delay.h>
 #include "driver.h"
 #include "sram_test.h"
+#include "io_driver.h"
 
 #include <stdio.h>
 
@@ -30,14 +31,17 @@ int main(void)
 	TCCR1B |= (1 << WGM12) | (1 << CS10); // No prescaling (table 57)
 	OCR1A = 0;
 
+	// Reading from ADC
 
+
+	joystick_calibrate();
 	while (1)
     {
-		int data;
-		data = USART_Receive();
-		printf("%d", data);
-    }
+		JoystickPosition pos = joystick_get_position();
+		printf("X: %d, Y: %d\n", pos.x, pos.y);		
+		_delay_ms(5000);
 
+    }
 
 	//
     // while (1)
@@ -52,3 +56,4 @@ int main(void)
 
 
 // sudo picocom -b 9600 /dev/ttyS4
+//EXIT: ctrl X
