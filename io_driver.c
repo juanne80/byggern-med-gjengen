@@ -1,4 +1,5 @@
 #include "io_driver.h"
+#include "spi_driver.h"
 #include <avr/io.h>
 #include <math.h>
 #include <stdint.h>
@@ -56,11 +57,11 @@ JoystickPosition joystick_get_position() {
 
 JoystickDirection joystick_get_direction() {
 	JoystickPosition pos = joystick_get_position();
-	const int8_t threshold = 10;
-	if (pos.x > threshold) return RIGHT;
-	if (pos.x < -threshold) return LEFT;
-	if (pos.y > threshold) return UP;
-	if (pos.y < -threshold) return DOWN;
+	const int8_t threshold = 30;
+	if (pos.x > threshold) return UP;
+	if (pos.x < -threshold) return DOWN;
+	if (pos.y > threshold) return RIGHT;
+	if (pos.y < -threshold) return LEFT;
 	return NEUTRAL;
 } 
 
@@ -82,3 +83,55 @@ int touchpadpos_to_percentage(uint8_t voltage)
 {
 	return round(200/5 * (voltage - 2.5));
 }
+
+const char* joystick_direction_to_string(JoystickDirection dir)
+{
+    switch (dir) {
+        case LEFT:    return "LEFT";
+        case RIGHT:   return "RIGHT";
+        case UP:      return "UP";
+        case DOWN:    return "DOWN";
+        case NEUTRAL: return "NEUTRAL";
+        default:      return "UKJENT";
+    }
+}
+
+uint8_t buttons_right, buttons_left, buttons_nav;
+
+void io_read_buttons() {
+    spi_select_slave(IO);
+    spi_transfer(0x04);                    // kommando: les knapper
+    buttons_right = spi_transfer(0x00);    // dummy-byte for å klokke ut svaret
+    buttons_left  = spi_transfer(0x00);
+    buttons_nav   = spi_transfer(0x00);
+    spi_deselect();
+}
+
+uint8_t sr6_pressed() {
+    return (buttons_right & (1 << 5)) != 0;   // R6 er bit 5
+}
+
+void io_led_set(uint8_t led_n, uint8_t on) {
+    spi_select_slave(IO);
+    spi_transfer(0x05);   // kommando: LED on/off
+    spi_transfer(led_n);  // hvilken LED (0-5)
+    spi_transfer(on);     // 0 = av, alt annet = på
+    spi_deselect();
+}
+
+void light_correct_lights() {
+	io_read_buttons();
+	if ((buttons_right & (1 << 5)) != 0) {
+		io_led_set(0, 1);
+	}
+	io_led_set(1, buttons_left);
+}
+
+void button_init() {
+	for (uint8_t i = 0; i < 6; i++) {
+		io_led_set(i, 0);
+	}
+
+}
+
+//Knapp SR3 fungerer ikke ("holdt inne" hele tiden)
