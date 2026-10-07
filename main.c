@@ -8,6 +8,9 @@
 
 #include <stdio.h>
 #include "oled_menu.h"
+#include "can_driver.h"
+#include "can_controller_driver.h"
+#include "mcp2515.h"
 
 #define FOSC 4915200UL
 #define BAUD 9600
@@ -38,23 +41,65 @@ int main(void) {
   joystick_calibrate();
   button_init();
 
-  JoystickDirection joystickdirection;
-  JoystickDirection lastjoystickdirection;
-  lastjoystickdirection = NEUTRAL;
 
-  while(1) {
+    // Test 1: initialisering
+    if (can_init(MODE_LOOPBACK) != 0) {
+        printf("can_init feilet \r\n");
+        while (1);   // ikke gjør mer...
+    }
+    printf("can_init gikk bra \r\n");
 
-	light_correct_lights();
+	//Sjekke at ingenting er mottatt enda
+    can_message rx;
+    if (can_receive(&rx)) {
+        printf("FEIL: mottok melding uten å ha sendt noe\r\n");
+    }
 
-	lastjoystickdirection = joystickdirection;
-	joystickdirection = joystick_get_direction();
-	printf(joystick_direction_to_string(joystickdirection));
-	if (lastjoystickdirection != joystickdirection) {
-		menu_handle_input(joystickdirection);
-	}
-	_delay_ms(100);
+    can_message tx = {
+        .id = 0x123,
+        .length = 3,
+        .data = {1, 2, 3}
+    };
 
-  }
+    while (1) {
+        if (can_send(&tx) != 0) {
+            printf("can_send timeout\r\n");
+        }
+
+        _delay_ms(10);   // gi kontrolleren tid
+
+        if (can_receive(&rx)) {
+            printf("Mottok ID 0x%03X, len %d, data:", rx.id, rx.length);
+            for (uint8_t i = 0; i < rx.length; i++) {
+                printf(" %d", rx.data[i]);
+            }
+            printf("\r\n");
+        } else {
+            printf("Ingen melding mottatt\r\n");
+        }
+
+        tx.data[0]++;  
+        _delay_ms(1000);
+    }
+
+	// LAB 4
+
+// 	  JoystickDirection joystickdirection;
+//   JoystickDirection lastjoystickdirection;
+//   lastjoystickdirection = NEUTRAL;
+	//   while(1) {
+
+	// 	light_correct_lights();
+
+	// 	lastjoystickdirection = joystickdirection;
+	// 	joystickdirection = joystick_get_direction();
+	// 	printf(joystick_direction_to_string(joystickdirection));
+	// 	if (lastjoystickdirection != joystickdirection) {
+	// 		menu_handle_input(joystickdirection);
+	// 	}
+	// 	_delay_ms(100);
+
+//   }
 
   // while (1)
   // {

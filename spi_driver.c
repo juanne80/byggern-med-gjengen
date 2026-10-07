@@ -5,13 +5,15 @@
 
 void spi_init(void) {
   // PB1 = button
-  // PB2 = D/!C, PB3 = CS IO, PB4 = CS DISP
+  // PB2 = D/!C
+  // PD3 = CS CAN, PB3 = CS IO, PB4 = CS DISP
   // PB5 = MOSI, PB6 = MISO, PB7 = SCK
 
-  DDRB = (1 << DDB2) | (1 << DDB3) | (1 << DDB4) | (1 << DDB5) |
-         (1 << DDB7); // Set outputs
+  	DDRB = (1 << DDB2) | (1 << DDB3) | (1 << DDB4) | (1 << DDB5) | (1 << DDB7); // Set outputs
 	DDRB &= ~ (1 << DDB6);
 	DDRB &= ~ (1 << DDB1);
+
+	DDRD |= (1 << DDD3); // PD3 er output for CS CAN
 
   spi_deselect();
 
@@ -22,9 +24,8 @@ void spi_init(void) {
 }
 
 void spi_deselect() {
-  PORTB |=
-      (1 << PB2) | (1 << PB3) |
-      (1 << PB4); // Set io and disp CS and D/!C to 1 before SPI is activated
+  PORTD |= (1 << PD3);
+  PORTB |= (1 << PB2) | (1 << PB3) | (1 << PB4);
   // Set can cs high
 }
 
@@ -39,8 +40,8 @@ void spi_select_slave(int n) {
     PORTB &= ~(1 << PB3);
     break;
   case 2: // CAN
-    // PORTD &= ~(1 << PD4); //MÅÅÅ settes til rett register
-    break;
+	PORTD &= ~(1 << PD3);    
+	break;
   default:
     // ugyldig slavenummer – ingen slave velges
     break;
