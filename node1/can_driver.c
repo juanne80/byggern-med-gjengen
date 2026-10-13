@@ -19,6 +19,7 @@ uint8_t can_init(uint8_t mode) { //Returner 0 hvis alt gikk bra, 1 hvis noe gikk
 
     can_controller_write(MCP_CANINTE, MCP_RX0IE); // CANINTE: RX0IE = 1, gir interrupt på interrupt-pinnen når RXB0 får en melding 
 
+	//Bit timing, sjekk mcp2515.h
 	can_controller_write(MCP_CNF1, CAN_CNF1);
 	can_controller_write(MCP_CNF2, CAN_CNF2);
 	can_controller_write(MCP_CNF3, CAN_CNF3);

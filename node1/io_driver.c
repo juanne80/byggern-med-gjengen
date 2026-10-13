@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+static uint8_t center_x;
+static uint8_t center_y;
 
 volatile char *adc = (char*)0x1000;
 
@@ -31,7 +33,7 @@ void adc_read_all_channels(uint8_t *results) {
 
 }
 
-uint8_t center_x, center_y;
+
 
 void joystick_calibrate() {
 	//joy x = 2,56

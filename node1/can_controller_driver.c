@@ -33,11 +33,11 @@ void can_controller_request_to_send(uint8_t buffer_number) { //register 0, 1 or 
 // STATUS BITS:
 // 0	RX0IF: melding mottatt i RXB0
 // 1	RX1IF: melding mottatt i RXB1
-// 2	TXREQ for TXB0: TXB0 venter/sender
+// 2	TX0REQ for TXB0: TXB0 venter/sender
 // 3	TX0IF: TXB0 ferdig sendt
-// 4	TXREQ for TXB1
+// 4	TX1REQ for TXB1
 // 5	TX1IF
-// 6	TXREQ for TXB2
+// 6	TX2REQ for TXB2
 // 7	TX2IF
 
 uint8_t can_controller_read_status(void) {

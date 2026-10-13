@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 
+
 typedef struct {int8_t x; int8_t y;} JoystickPosition;
 typedef enum {LEFT, RIGHT, UP, DOWN, NEUTRAL} JoystickDirection;
 
