@@ -9,8 +9,10 @@ SOURCE_FILES = \
 	$(BOOTUP) \
 	main.c \
 	uart.c \
-	can.c
-
+	can.c \
+	time.c \
+	pwm_driver.c \
+	timer_driver.c
 
 # Feel free to ignore anything below this line
 VPATH:= $(dir $(SOURCE_FILES))

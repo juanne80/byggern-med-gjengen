@@ -48,7 +48,6 @@ void can_init(CanInit init, uint8_t rxInterrupt){
     CAN0->CAN_BR = init.reg; 
     
 
-
     // Configure mailboxes
     // transmit
     CAN0->CAN_MB[txMailbox].CAN_MID = CAN_MID_MIDE;

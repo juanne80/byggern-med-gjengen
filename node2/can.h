@@ -21,15 +21,6 @@ __attribute__((packed)) struct CanInit {
 };
 
 
-//Vi velger synch = 1, prop = 2, ps1 = 7, ps2 = 6 -> 16 tq, der tq = 500 ns. Får 8 mikro s per bit = 125 kbit/s
-static const CanInit can_in = {
-	.brp    = 41, // TQ = (BRP+1)/MCK = 42/84 MHz = 500 ns
-	.sjw    =  0, //re-synhronization jump width = 1 tq (også -1)
-	.propag = 1, //PROP - 1
-	.phase1 = 6, //PS1 - 1
-	.phase2 = 5, //PS2 - 1
-	.smp    = 0, // 1 sampling
-};
 
 
 // Initialize CAN bus, with bit timings and optional interrupt

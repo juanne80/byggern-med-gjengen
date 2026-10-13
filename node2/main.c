@@ -3,6 +3,8 @@
 #include "sam.h"
 #include "uart.h"
 #include "can.h"
+#include "pwm_driver.h"
+#include "timer_driver.h"
 
 /*
  * Remember to update the Makefile with the (relative) path to the uart.c file.
@@ -20,22 +22,61 @@ int main()
     SystemInit();
 	WDT->WDT_MR = WDT_MR_WDDIS; //Disable Watchdog Timer
 
-
 	//Uncomment after including uart above
     uart_init(F_CPU, 9600); //freuency + baudrate, må muligens endres til høyere baudrate
     printf("Hello World\n\r");
 
 	//CAN init
+	
+	//Vi velger synch = 1, prop = 2, ps1 = 7, ps2 = 6 -> 16 tq, der tq = 500 ns. Får 8 mikro s per bit = 125 kbit/s
+	const CanInit can_in = {
+		.brp    = 41, // TQ = (BRP+1)/MCK = 42/84 MHz = 500 ns
+		.sjw    =  0, //re-synhronization jump width = 1 tq (også -1)
+		.propag = 1, //PROP - 1
+		.phase1 = 6, //PS1 - 1
+		.phase2 = 5, //PS2 - 1
+		.smp    = 0, // 1 sampling
+	};
 
 	can_init(can_in, 0); 
 	printf("CAN_BR = 0x%08lX\r\n", CAN0->CAN_BR);
 
-	PMC->PMC_PCER0 = (1 << ID_PIOB);     // klokke til PIOB
-    PIOB->PIO_PER  = PIO_PB13;           // PIO styrer pinnen
-    PIOB->PIO_OER  = PIO_PB13;           // utgang
-    PIOB->PIO_SODR = PIO_PB13;           // sett høy
+	// Skriv ut og dekod CAN_BR, så dere kan sammenligne med CNF1-3 på node 1.
+    // Feltene lagres som "verdi - 1", derfor +1 for å få antall TQ.
+    uint32_t br = CAN0->CAN_BR;
+    printf("CAN_BR = 0x%08lX\r\n", br);
+    printf("  BRP=%lu  -> TQ = %lu/MCK\r\n", (br >> 16) & 0x7F, ((br >> 16) & 0x7F) + 1);
+    printf("  PROPAG=%lu TQ, PHASE1=%lu TQ, PHASE2=%lu TQ, SJW=%lu TQ, SMP=%lu\r\n",
+           ((br >> 8)  & 0x7) + 1,
+           ((br >> 4)  & 0x7) + 1,
+           ((br >> 0)  & 0x7) + 1,
+           ((br >> 12) & 0x3) + 1,
+           (br >> 24) & 0x1);
+	
+	
 
-    while (1) { }
+	PMC->PMC_PCER0 = (1 << ID_PIOB);     // klokke til PIOB
+
+	// Oppgave 1: "hello world"
+    // PIOB->PIO_PER  = PIO_PB13;           // PIO styrer pinnen
+    // PIOB->PIO_OER  = PIO_PB13;           // utgang
+    // PIOB->PIO_SODR = PIO_PB13;           // sett høy
+	
+	timer_init();
+	tc_pwm_init();
+
+    CanMsg msg;
+ 
+    while (1) {
+        if (can_rx(&msg)) {
+            printf("Node 2 mottok: "); can_printmsg(msg);
+			int8_t xpercentage = (int8_t)msg.byte[0];
+			joystick_to_PWM(xpercentage);
+            msg.id = 0x22;   // annen ID enn node 1 bruker, så svaret kan skilles fra
+            can_tx(msg);     // ekko tilbake samme data
+        }
+    }
+
     
 }
 
