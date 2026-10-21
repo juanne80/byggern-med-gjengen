@@ -72,4 +72,4 @@ build/main.o: main.c sam/sam3x/include/sam.h sam/sam3x/include/sam3x8e.h \
  sam/sam3x/include/instance/instance_rtc.h \
  sam/sam3x/include/instance/instance_gpbr.h \
  sam/sam3x/include/pio/pio_sam3x8e.h uart.h can.h pwm_driver.h \
- timer_driver.h
+ timer_driver.h ir_driver.h gamer_driver.h encoder.h motor.h

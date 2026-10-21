@@ -104,7 +104,7 @@ int main(void) {
             printf("\r\n");
         }
  
-        _delay_ms(1000);
+        _delay_ms(20);
 
     }
 

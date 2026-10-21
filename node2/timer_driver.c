@@ -1,6 +1,6 @@
 #include "timer_driver.h"
 #include "sam.h"
-
+#include "motor.h"
 
 volatile uint32_t timer_ticks = 0;   
 
@@ -32,6 +32,7 @@ void TC0_Handler(void)
 
 	// skrive hva vi vil skal skje hvert 10. ms
     timer_ticks++;
+	motor_on_tick();
 }
 
 // pwm

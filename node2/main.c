@@ -5,6 +5,10 @@
 #include "can.h"
 #include "pwm_driver.h"
 #include "timer_driver.h"
+#include "ir_driver.h"
+#include "gamer_driver.h"
+#include "encoder.h"
+#include "motor.h"
 
 /*
  * Remember to update the Makefile with the (relative) path to the uart.c file.
@@ -63,21 +67,29 @@ int main()
     // PIOB->PIO_SODR = PIO_PB13;           // sett høy
 	
 	timer_init();
-	tc_pwm_init();
+	pwm_init();
+	adc_init();
+	encoder_init();
+	motor_init();
 
-    CanMsg msg;
+    start_game();
+	
+	CanMsg msg;
  
     while (1) {
         if (can_rx(&msg)) {
             printf("Node 2 mottok: "); can_printmsg(msg);
 			int8_t xpercentage = (int8_t)msg.byte[0];
+			int8_t ypercentage = (int8_t)msg.byte[1];
 			joystick_to_PWM(xpercentage);
-            msg.id = 0x22;   // annen ID enn node 1 bruker, så svaret kan skilles fra
+			motor_update_joystick(ypercentage);
             can_tx(msg);     // ekko tilbake samme data
         }
+		
+		check_ir_beam(adc_read());
+		//printf("Counter = %d\r\n", get_ir_counter());
+		//printf("Encoder: %ld\r\n", encoder_read());
     }
-
-    
 }
 
 

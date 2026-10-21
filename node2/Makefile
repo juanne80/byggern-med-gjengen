@@ -12,7 +12,11 @@ SOURCE_FILES = \
 	can.c \
 	time.c \
 	pwm_driver.c \
-	timer_driver.c
+	timer_driver.c \
+	ir_driver.c \
+	gamer_driver.c \
+	encoder.c \
+	motor.c
 
 # Feel free to ignore anything below this line
 VPATH:= $(dir $(SOURCE_FILES))
