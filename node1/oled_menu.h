@@ -2,4 +2,4 @@
 
 void menu_init();
 void menu_draw();
-void menu_handle_input(JoystickDirection joystickdirection);
+void menu_handle_input(MenuJoystickDirection menujoystickdirection);

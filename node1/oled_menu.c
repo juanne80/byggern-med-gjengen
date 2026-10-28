@@ -16,33 +16,102 @@ typedef struct Menu {
     struct Menu* parent;       // "forrige" meny (dit du går ved back)
 } Menu;
 
-//SUBMENU 1
 
-const char* submenu1_items[] = { "oh 1", "oh 2", "oh 3", "oh 4" };
-Menu submenu1 = {
-    .title = "Submenu 1",
-    .items = submenu1_items,
-    .num_items = 4,
-    .submenus = NULL,   // ingen av disse fire har egne undermenyer
-    .parent = NULL      // settes i menu_init(), se under
+// ======================= Settings -> undermenyer =======================
+ 
+// Settings -> Number of lives
+const char* num_of_lives_items[] = { "1", "2", "3", "4", "5", "Infinite" };
+Menu num_of_lives = {
+    .title = "Number of lives",
+    .items = num_of_lives_items,
+    .num_items = 6,
+    .submenus = NULL,          // ingen undermenyer
+    .parent = NULL
 };
-
-//MAIN MENU
-
-const char* main_items[] = {"Alternativ 1","Alternativ 2","Alternativ 3","Alternativ 4", "Alternativ 5","Alternativ 6","Alternativ 7","Alternativ 8"};
-Menu* main_submenus[8] = { &submenu1, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-
+ 
+// Settings -> Choose player
+const char* choose_player_items[] = { "Hanne", "Helene", "Ulrikke", "Studass",
+                                      "Sensor", "Looser", "VIP Guest", "Guest" };
+Menu choose_player = {
+    .title = "Choose player",
+    .items = choose_player_items,
+    .num_items = 8,
+    .submenus = NULL,
+    .parent = NULL
+};
+ 
+// Settings -> Controller
+const char* controller_items[] = { "Joystick", "Touch slider" };
+Menu controller = {
+    .title = "Controller",
+    .items = controller_items,
+    .num_items = 2,
+    .submenus = NULL,
+    .parent = NULL
+};
+ 
+// Settings -> Difficulty
+const char* difficulty_items[] = { "Easy", "Medium", "Hard", "Extreme" };
+Menu difficulty = {
+    .title = "Difficulty",
+    .items = difficulty_items,
+    .num_items = 4,
+    .submenus = NULL,
+    .parent = NULL
+};
+ 
+ 
+// ============================== Settings ==============================
+ 
+const char* settings_items[] = { "Number of lives", "Choose player", "Controller", "Difficulty" };
+Menu* settings_submenus[4]   = { &num_of_lives,     &choose_player,  &controller,  &difficulty };
+ 
+Menu settings = {
+    .title = "Settings",
+    .items = settings_items,
+    .num_items = 4,
+    .submenus = settings_submenus,
+    .parent = NULL
+};
+ 
+ 
+// ========================= Previous highscores =========================
+ 
+const char* prev_highscores_items[] = { "1. Ulrikke", "2. Hanne", "3. Helene", "4. Sensor" };
+Menu prev_highscores = {
+    .title = "Previous highscores",
+    .items = prev_highscores_items,
+    .num_items = 4,
+    .submenus = NULL,
+    .parent = NULL
+};
+ 
+ 
+// ============================== Main menu ==============================
+ 
+const char* main_items[] = { "Start game", "Settings", "Previous highscores", "Calibrate" };
+Menu* main_submenus[4]   = { NULL,         &settings,  &prev_highscores,      NULL };
+ 
 Menu MainMenu = {
     .title = "Main menu",
     .items = main_items,
-    .num_items = 8,
+    .num_items = 4,
     .submenus = main_submenus,
-    .parent = NULL
+    .parent = NULL             // toppmenyen har ingen forelder
 };
-
+ 
+ 
+// Kobler hver meny til menyen over seg (brukes av LEFT)
 void menu_init(void) {
-    submenu1.parent = &MainMenu;  // gjøres i en funksjon fordi structene refererer til hverandre
+    settings.parent        = &MainMenu;
+    prev_highscores.parent = &MainMenu;
+ 
+    num_of_lives.parent    = &settings;
+    choose_player.parent   = &settings;
+    controller.parent      = &settings;
+    difficulty.parent      = &settings;
 }
+ 
 
 
 Menu* current_menu = &MainMenu;
@@ -61,28 +130,27 @@ void menu_draw(void) {
 }
 
 
-void menu_handle_input(JoystickDirection joystickdirection) {
+void menu_handle_input(MenuJoystickDirection menujoystickdirection) {
 
-	switch (joystickdirection) {
-		case UP:
+	switch (menujoystickdirection) {
+		case MENU_UP:
 			if (selected > 0) selected --;
 			break;
-		case DOWN:
+		case MENU_DOWN:
 			if (selected < current_menu->num_items - 1) selected++;
 			break;
-		case RIGHT:
+		case MENU_RIGHT:
 			if (current_menu->submenus != NULL && current_menu->submenus[selected] != NULL) {
                 current_menu = current_menu->submenus[selected];  // gå til "neste"
                 selected = 0;
-            } else {
-                // Menyen er "valgt"
             }
 			break;
-		case LEFT:
+		case MENU_LEFT:
             if (current_menu->parent != NULL) {
                 current_menu = current_menu->parent;              // gå til "forrige"
                 selected = 0;
             }
+		//case MENU_BUTTON:
 		break;
 		deafult:
 			break;

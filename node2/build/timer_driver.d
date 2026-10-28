@@ -72,4 +72,4 @@ build/timer_driver.o: timer_driver.c timer_driver.h \
  sam/sam3x/include/instance/instance_wdt.h \
  sam/sam3x/include/instance/instance_rtc.h \
  sam/sam3x/include/instance/instance_gpbr.h \
- sam/sam3x/include/pio/pio_sam3x8e.h motor.h
+ sam/sam3x/include/pio/pio_sam3x8e.h motor.h solenoid.h

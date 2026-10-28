@@ -35,9 +35,9 @@ void start_game(void) {
 	int32_t encoder_value = encoder_read();
 	motor_set(50);
 	while (last_encoder_value != encoder_value) {
+		for (volatile uint32_t i = 0; i < 1200000; i++) { }
 		last_encoder_value = encoder_value;
 		encoder_value = encoder_read();
-		for (volatile uint32_t i = 0; i < 1200000; i++) { }
 	}
 	motor_set(0);
 	encoder_reset();

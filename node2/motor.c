@@ -4,13 +4,14 @@
 #include "sam.h"
 #include "encoder.h"
 
-#define KP     0.05f    // startverdi, juster
-#define KI     0.02f    // start med 0, legg til senere
+#define KP     0.35f    // startverdi, juster
+#define KI     0.1f    // start med 0, legg til senere
+#define KD     0.01f
 #define T      0.01f    // 10 ms, samme som timeren
 #define U_MAX  100
 
-#define JOY_GAIN  0.1f 
-#define DEADZONE  5    
+#define JOY_GAIN  0.4f 
+#define DEADZONE  5
 
 
 void motor_init(void) {
@@ -54,15 +55,22 @@ void motor_set(int8_t u)
 int8_t pi_regulator(int32_t pos, int32_t ref)
 {
     static float integral = 0;
+    static int32_t last_pos = 0;        
+    static float d_filter = 0;           
+
     int32_t e = pos - ref;
-	integral += e * T;
+    integral += e * T;
 
     // Anti-windup
     float i_max = U_MAX / KI;
     if (integral >  i_max) integral =  i_max;
     if (integral < -i_max) integral = -i_max;
 
-    float u = KP*e + KI*integral;
+    float speed = (pos - last_pos) / T;   // ny: fart i skritt per sekund
+    last_pos = pos;                       // ny
+    d_filter = 0.7f * d_filter + 0.3f * speed; // ny: glatter ut farten
+
+    float u = KP*e + KI*integral + KD*d_filter;   // endret: + KD*d_filt
 
     if (u >  U_MAX) u =  U_MAX;
     if (u < -U_MAX) u = -U_MAX;
@@ -70,11 +78,11 @@ int8_t pi_regulator(int32_t pos, int32_t ref)
     return (int8_t)u;
 }
 
-int8_t joy;
+static volatile int8_t joy = 0;
 
-static int32_t reference = 0; //Begynner til siden, på 0
+static float reference = 0; //Begynner til siden, på 0
 
-void motor_on_tick(void)                       // hvert 10. ms
+void motor_on_tick(void)                       // hvert 10. ms (timer_driver.c)
 {
     if (joy > DEADZONE || joy < -DEADZONE) {
         reference += joy * JOY_GAIN;

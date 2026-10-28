@@ -10,7 +10,7 @@ void adc_init(void){
                 | ADC_MR_PRESCAL(2);         // ADC-klokke = 84 MHz / ((2+1)*2) = 14 MHz (Kan maks være 22 MHz, s.1403)
 
 	ADC->ADC_CHER = ADC_CHER_CH7; //Aktiverer kanal 7 (PA16/ADC[0], s.40)
-	ADC->ADC_CR=ADC_CR_START; //starter adc conversion
+	ADC->ADC_CR = ADC_CR_START; //starter adc conversion
 
 }
 

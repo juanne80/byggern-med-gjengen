@@ -9,6 +9,7 @@
 #include "gamer_driver.h"
 #include "encoder.h"
 #include "motor.h"
+#include "solenoid.h"
 
 /*
  * Remember to update the Makefile with the (relative) path to the uart.c file.
@@ -66,32 +67,46 @@ int main()
     // PIOB->PIO_OER  = PIO_PB13;           // utgang
     // PIOB->PIO_SODR = PIO_PB13;           // sett høy
 	
-	timer_init();
 	pwm_init();
 	adc_init();
 	encoder_init();
 	motor_init();
+	solenoid_init();
 
     start_game();
+
+	timer_init();
+
 	
 	CanMsg msg;
+	uint8_t last_solenoid_button = 0;
+
+
  
     while (1) {
         if (can_rx(&msg)) {
-            printf("Node 2 mottok: "); can_printmsg(msg);
+            // printf("Node 2 mottok: "); can_printmsg(msg);
 			int8_t xpercentage = (int8_t)msg.byte[0];
 			int8_t ypercentage = (int8_t)msg.byte[1];
+			uint8_t solenoid_button_pressed = msg.byte[2];
 			joystick_to_PWM(xpercentage);
 			motor_update_joystick(ypercentage);
-            can_tx(msg);     // ekko tilbake samme data
+
+			if (solenoid_button_pressed && !last_solenoid_button) {
+				solenoid_fire();
+			}
+			last_solenoid_button = solenoid_button_pressed;
+            //can_tx(msg);     // ekko tilbake samme data
         }
 		
 		check_ir_beam(adc_read());
-		//printf("Counter = %d\r\n", get_ir_counter());
-		//printf("Encoder: %ld\r\n", encoder_read());
+		printf("Counter = %d\r\n", get_ir_counter());
+		printf("ADC: %ld\r\n", adc_read());
     }
 }
 
 
 // sudo picocom -b 9600 /dev/ttyS4
 // EXIT: ctrl X
+
+

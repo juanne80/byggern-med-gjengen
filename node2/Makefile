@@ -16,7 +16,8 @@ SOURCE_FILES = \
 	ir_driver.c \
 	gamer_driver.c \
 	encoder.c \
-	motor.c
+	motor.c \
+	solenoid.c
 
 # Feel free to ignore anything below this line
 VPATH:= $(dir $(SOURCE_FILES))

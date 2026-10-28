@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define F_CPU 4915200UL
+#include <util/delay.h>
+
 static uint8_t center_x;
 static uint8_t center_y;
 
@@ -32,7 +35,6 @@ void adc_read_all_channels(uint8_t *results) {
 	}
 
 }
-
 
 
 void joystick_calibrate() {
@@ -100,11 +102,15 @@ const char* joystick_direction_to_string(JoystickDirection dir)
 
 uint8_t buttons_right, buttons_left, buttons_nav;
 
+
 void io_read_buttons() {
     spi_select_slave(IO);
-    spi_transfer(0x04);                    // kommando: les knapper
-    buttons_right = spi_transfer(0x00);    // dummy-byte for å klokke ut svaret
+    spi_transfer(0x04);    // kommando: les knapper
+    _delay_us(40);                        // NY: AVR-en trenger tid
+    buttons_right = spi_transfer(0x00); // dummy-byte for å klokke ut svaret
+    _delay_us(2);
     buttons_left  = spi_transfer(0x00);
+    _delay_us(2);
     buttons_nav   = spi_transfer(0x00);
     spi_deselect();
 }
@@ -137,3 +143,45 @@ void button_init() {
 }
 
 //Knapp SR3 fungerer ikke ("holdt inne" hele tiden)
+
+uint8_t solenoid_button_pressed(void)
+{
+    io_read_buttons();
+    return (buttons_right >> 5) & 1;    // bit 5 = R6
+}
+
+const char* menu_direction_to_string(MenuJoystickDirection direction)
+{
+    switch (direction) {
+        case MENU_UP:     return "UP";
+        case MENU_DOWN:   return "DOWN";
+        case MENU_LEFT:   return "LEFT";
+        case MENU_RIGHT:  return "RIGHT";
+        case MENU_BUTTON: return "BUTTON";
+        case MENU_NEUTRAL: return "NEUTRAL";
+		default: return "NONE";
+    }
+}
+
+MenuJoystickDirection get_menu_joystick_direction(void) {
+	io_read_buttons();
+	MenuJoystickDirection direction = MENU_NEUTRAL;
+	if ((buttons_nav >> 4) & 1){
+		direction = MENU_UP;
+	}
+	else if ((buttons_nav >> 3) & 1){
+		direction = MENU_LEFT;
+	}
+	else if ((buttons_nav >> 2) & 1){
+		direction = MENU_DOWN;
+	}
+	else if ((buttons_nav >> 1) & 1){
+		direction = MENU_RIGHT;
+	}
+	else if ((buttons_nav >> 0) & 1){
+		direction = MENU_BUTTON;
+	}
+	printf("%s\r\n", menu_direction_to_string(direction));
+	return direction;
+}
+
