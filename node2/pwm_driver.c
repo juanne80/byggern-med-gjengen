@@ -32,6 +32,8 @@ void pwm_set_pulse_us(uint32_t pulse_us)
 
 void joystick_to_PWM(int8_t xpercentage){
 	uint32_t dutyCycle = (uint32_t)(xpercentage*6 + 1500);
+	if (xpercentage > -10 && xpercentage < 10) dutyCycle = 1500;
+    
 
 	pwm_set_pulse_us(dutyCycle);
 	

@@ -61,11 +61,6 @@ int main()
 	
 
 	PMC->PMC_PCER0 = (1 << ID_PIOB);     // klokke til PIOB
-
-	// Oppgave 1: "hello world"
-    // PIOB->PIO_PER  = PIO_PB13;           // PIO styrer pinnen
-    // PIOB->PIO_OER  = PIO_PB13;           // utgang
-    // PIOB->PIO_SODR = PIO_PB13;           // sett høy
 	
 	pwm_init();
 	adc_init();
@@ -73,36 +68,73 @@ int main()
 	motor_init();
 	solenoid_init();
 
-    start_game();
-
+    motor_home();
 	timer_init();
 
 	
 	CanMsg msg;
 	uint8_t last_solenoid_button = 0;
+	uint32_t last_print = 0;
 
 
  
     while (1) {
         if (can_rx(&msg)) {
-            // printf("Node 2 mottok: "); can_printmsg(msg);
-			int8_t xpercentage = (int8_t)msg.byte[0];
-			int8_t ypercentage = (int8_t)msg.byte[1];
-			uint8_t solenoid_button_pressed = msg.byte[2];
-			joystick_to_PWM(xpercentage);
-			motor_update_joystick(ypercentage);
+			if (msg.id == 0x10) {
+				int8_t xpercentage = (int8_t)msg.byte[0];
+				int8_t ypercentage = (int8_t)msg.byte[1];
+				uint8_t solenoid_button_pressed = msg.byte[2];
+				joystick_to_PWM(xpercentage);
+				motor_update_joystick(ypercentage);
 
-			if (solenoid_button_pressed && !last_solenoid_button) {
-				solenoid_fire();
-			}
+				if (solenoid_button_pressed && !last_solenoid_button) {
+					solenoid_fire();
+				}
 			last_solenoid_button = solenoid_button_pressed;
-            //can_tx(msg);     // ekko tilbake samme data
+			}
+			else if(msg.id == 0x20){
+				setting_lives      = msg.byte[1];
+				setting_player     = msg.byte[2];
+				setting_controller = msg.byte[3];
+				setting_difficulty = msg.byte[4];
+				game_start(setting_lives, setting_player, setting_controller, setting_difficulty);
+			}
         }
 		
 		check_ir_beam(adc_read());
-		printf("Counter = %d\r\n", get_ir_counter());
-		printf("ADC: %ld\r\n", adc_read());
-    }
+
+		static uint32_t last_status = 0;
+		if (timer_ticks - last_status >= 20) {        // hvert 200 ms
+			last_status = timer_ticks;
+
+			uint8_t lives;
+			if (setting_lives == 5) {
+				lives = 255;                          // 255 = uendelig
+			} else {
+				lives = get_lives_left();
+			}
+
+			uint16_t score = get_ir_counter();
+			uint16_t time = get_game_time();
+			
+			CanMsg status;
+			status.id      = 0x30;
+			status.length  = 4;
+			status.byte[0] = game_is_running();       // 1 = spillet går
+			status.byte[1] = lives;
+			status.byte[2] = time >> 8;        // høy byte
+			status.byte[3] = time & 0xFF;      // lav byte
+
+			can_tx(status);
+		}
+		
+		
+		if (timer_ticks - last_print >= 50) {         // hvert halve sekund
+			last_print = timer_ticks;
+			printf("Counter = %u  Lives = %u  ADC = %u\r\n",
+				get_ir_counter(), get_lives_left(), adc_read());
+		}
+	}
 }
 
 

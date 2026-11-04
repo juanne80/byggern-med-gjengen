@@ -38,3 +38,8 @@ void solenoid_tick(void)              // kalles fra TC0_Handler hvert 10. ms
         }
     }
 }
+
+uint8_t solenoid_active(void)
+{
+    return shoot_ticks > 0;
+}

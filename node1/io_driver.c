@@ -1,113 +1,121 @@
+#ifndef F_CPU
+#define F_CPU 4915200UL
+#endif
+
 #include "io_driver.h"
 #include "spi_driver.h"
 #include <avr/io.h>
-#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-
-#define F_CPU 4915200UL
+#include <avr/pgmspace.h>     
 #include <util/delay.h>
+#include <math.h>
 
-static uint8_t center_x;
-static uint8_t center_y;
 
-volatile char *adc = (char*)0x1000;
-
+#define ADC_ADDRESS 0x1000
 #define CH_JOYSTICK_X 2
 #define CH_JOYSTICK_Y 3
 #define CH_TOUCH_X 1
 #define CH_TOUCH_Y 0
 
+// Joystick limits measured on the ADC
+#define JOY_RAW_MIN     69
+#define JOY_RAW_MAX     246
 
 
-void adc_start_conversion() {
-	*adc = 0x00;
-}
+// IO board SPI commands
+#define IO_CMD_BUTTONS  0x04
+#define IO_CMD_LED      0x05
 
+volatile char *adc = (char*)ADC_ADDRESS;
+
+static uint8_t center_x;
+static uint8_t center_y;
+
+// Button states from the last call to io_read_buttons()
+static uint8_t buttons_right;   // [0 0 R6 R5 R4 R3 R2 R1]
+static uint8_t buttons_left;    // [0 L7 L6 L5 L4 L3 L2 L1]
+static uint8_t buttons_nav;     // [0 0 0 Up Down Left Right Btn]
+
+
+// JOYSTICK SECTION
+
+// Starts a conversion, waits for BUSY (PD4) and reads all four ADC channels.
 void adc_read_all_channels(uint8_t *results) {
-	adc_start_conversion();
-	while (PIND & (1 << PD4)) { }
-	while (!(PIND & (1 << PD4))) {
-		//Wait
-	}
+	
+	*adc = 0x00;                   	// Any write starts a conversion
+
+	while (PIND & (1 << PD4)) {}	// Wait for BUSY to go low
+
+	while (!(PIND & (1 << PD4))) {} // And high again: conversion done!
+	
 	for (uint8_t i = 0; i < 4; i++) {
-		results[i] = *adc;
+		results[i] = *adc;    		 // each read returns the next channel
 	}
 
 }
 
+// Measures the joystick rest position. The stick must not be touched while this runs.
+void joystick_calibrate(void) {
 
-void joystick_calibrate() {
-	//joy x = 2,56
-	//joy y = 2.54
+	//Reads values from adc
 	uint8_t results[4];
 	adc_read_all_channels(results);
+
+	//Fetches joystick values from adc values
 	center_x = results[CH_JOYSTICK_X];
 	center_y = results[CH_JOYSTICK_Y];
-	printf("center x: %d\n", center_x);
-		printf("center y: %d\n", center_y);
+
+	// printf_P(PSTR("center x=%d y=%d\r\n"), center_x, center_y);
 }
 
 
+// Converts a raw ADC value to -100% to 100% relative to the calibrated center
+int joystickpos_to_percentage(uint8_t raw, uint8_t center)
+{
+	int result;
+	if (raw >= center) {
+		result = (int16_t)(raw-center)*100/(JOY_RAW_MAX-center);
+	}
 
-JoystickPosition joystick_get_position() {
+	else result = -(int16_t)(center-raw)*100/(center-JOY_RAW_MIN);
+	
+	//Check if valid percentage
+	if (result > 100) {
+		result = 100;
+	}
+
+    if (result < -100) {
+		result = -100;
+	}
+
+    return result;
+}
+
+// Returns the joystick position as -100..100 % in x and y.
+JoystickPosition joystick_get_position(void) {
+
 	uint8_t results[4];
 	adc_read_all_channels(results);
+
 	JoystickPosition pos;
 	pos.x = joystickpos_to_percentage(results[CH_JOYSTICK_X], center_x);
 	pos.y = joystickpos_to_percentage(results[CH_JOYSTICK_Y], center_y);
 	return pos;
 }
 
-JoystickDirection joystick_get_direction() {
-	JoystickPosition pos = joystick_get_position();
-	const int8_t threshold = 30;
-	if (pos.x > threshold) return UP;
-	if (pos.x < -threshold) return DOWN;
-	if (pos.y > threshold) return RIGHT;
-	if (pos.y < -threshold) return LEFT;
-	return NEUTRAL;
-} 
 
 
-int joystickpos_to_percentage(uint8_t raw, uint8_t center)
-{
-	int result;
-	if (raw >= center) {
-		result = (int16_t)(raw-center)*100/(246-center);
-	}
-
-	else result = -(int16_t)(center-raw)*100/(center-69);
-	if (result > 100)  result = 100;
-    if (result < -100) result = -100;
-    return result;
-}
-
-int touchpadpos_to_percentage(uint8_t voltage)
-{
-	return round(200/5 * (voltage - 2.5));
-}
-
-const char* joystick_direction_to_string(JoystickDirection dir)
-{
-    switch (dir) {
-        case LEFT:    return "LEFT";
-        case RIGHT:   return "RIGHT";
-        case UP:      return "UP";
-        case DOWN:    return "DOWN";
-        case NEUTRAL: return "NEUTRAL";
-        default:      return "UKJENT";
-    }
-}
-
-uint8_t buttons_right, buttons_left, buttons_nav;
+// BUTTONS SECTION
+//Note: Button SR3 does not work (always registered as pressed)
 
 
-void io_read_buttons() {
+// Reads all buttons from the IO board and stores them in buttons_right/left/nav
+void io_read_buttons(void) {
     spi_select_slave(IO);
-    spi_transfer(0x04);    // kommando: les knapper
-    _delay_us(40);                        // NY: AVR-en trenger tid
-    buttons_right = spi_transfer(0x00); // dummy-byte for å klokke ut svaret
+    spi_transfer(0x04);    // Command for reading buttons
+    _delay_us(40);
+    buttons_right = spi_transfer(0x00);  // Dummy bytes clock out the answer
     _delay_us(2);
     buttons_left  = spi_transfer(0x00);
     _delay_us(2);
@@ -115,19 +123,75 @@ void io_read_buttons() {
     spi_deselect();
 }
 
-uint8_t sr6_pressed() {
-    return (buttons_right & (1 << 5)) != 0;   // R6 er bit 5
+
+
+// Returns 1 if the solenoid button (R6) is pressed, otherwise 0.
+uint8_t solenoid_button_pressed(void)
+{
+    io_read_buttons();
+    return (buttons_right >> 5) & 1;    // bit 5 = R6
 }
 
-void io_led_set(uint8_t led_n, uint8_t on) {
-    spi_select_slave(IO);
-    spi_transfer(0x05);   // kommando: LED on/off
-    spi_transfer(led_n);  // hvilken LED (0-5)
-    spi_transfer(on);     // 0 = av, alt annet = på
-    spi_deselect();
+
+// Reads the navigation buttons and returns the direction used by the menu. If several are pressed, the one checked first wins.
+MenuJoystickDirection get_menu_joystick_direction(void) {
+	io_read_buttons();
+
+	if ((buttons_nav >> 4) & 1) {
+		return MENU_UP;
+	}
+
+    if ((buttons_nav >> 3) & 1) {
+		return MENU_LEFT;
+	}
+    if ((buttons_nav >> 2) & 1) {
+		return MENU_DOWN;
+
+	}
+    if ((buttons_nav >> 1) & 1) {
+		return MENU_RIGHT;
+	}
+
+    if ((buttons_nav >> 0) & 1) {
+		return MENU_BUTTON;
+
+	}
+
+    return MENU_NEUTRAL;
 }
 
-void light_correct_lights() {
+
+// NOT USED IN FINAL GAME, MADE FOR EXCERCISES
+
+// Returns the direction the joystick is pushed (or NEUTRAL near the center).
+// Made for exercise 3 (joystick direction) and used by the first version of the OLED menu in exercise 4.
+JoystickDirection joystick_get_direction(void) {
+	JoystickPosition pos = joystick_get_position();
+	const int8_t threshold = 30;
+	if (pos.x > threshold) {
+		return UP;
+	}
+	if (pos.x < -threshold) {
+		return DOWN;
+	}
+	if (pos.y > threshold) {
+		return RIGHT;
+	}
+	if (pos.y < -threshold) {
+		return LEFT;
+	}
+
+	return NEUTRAL;
+} 
+
+
+int touchpadpos_to_percentage(uint8_t voltage)
+{
+	return round(200/5 * (voltage - 2.5));
+}
+
+
+void light_correct_lights(void) {
 	io_read_buttons();
 	if ((buttons_right & (1 << 5)) != 0) {
 		io_led_set(0, 1);
@@ -135,53 +199,20 @@ void light_correct_lights() {
 	io_led_set(1, buttons_left);
 }
 
-void button_init() {
+// Turns LED number 0-5 on the IO board on (on != 0) or off.
+void io_led_set(uint8_t led_n, uint8_t on) {
+    spi_select_slave(IO);
+    spi_transfer(0x05);   // Command: LED on/off
+    spi_transfer(led_n);  // Which LED (0-5)
+    spi_transfer(on);     // 0 = off, else = on
+    spi_deselect();
+}
+
+
+// Turns off all LEDs
+void button_init(void) {
 	for (uint8_t i = 0; i < 6; i++) {
 		io_led_set(i, 0);
 	}
 
 }
-
-//Knapp SR3 fungerer ikke ("holdt inne" hele tiden)
-
-uint8_t solenoid_button_pressed(void)
-{
-    io_read_buttons();
-    return (buttons_right >> 5) & 1;    // bit 5 = R6
-}
-
-const char* menu_direction_to_string(MenuJoystickDirection direction)
-{
-    switch (direction) {
-        case MENU_UP:     return "UP";
-        case MENU_DOWN:   return "DOWN";
-        case MENU_LEFT:   return "LEFT";
-        case MENU_RIGHT:  return "RIGHT";
-        case MENU_BUTTON: return "BUTTON";
-        case MENU_NEUTRAL: return "NEUTRAL";
-		default: return "NONE";
-    }
-}
-
-MenuJoystickDirection get_menu_joystick_direction(void) {
-	io_read_buttons();
-	MenuJoystickDirection direction = MENU_NEUTRAL;
-	if ((buttons_nav >> 4) & 1){
-		direction = MENU_UP;
-	}
-	else if ((buttons_nav >> 3) & 1){
-		direction = MENU_LEFT;
-	}
-	else if ((buttons_nav >> 2) & 1){
-		direction = MENU_DOWN;
-	}
-	else if ((buttons_nav >> 1) & 1){
-		direction = MENU_RIGHT;
-	}
-	else if ((buttons_nav >> 0) & 1){
-		direction = MENU_BUTTON;
-	}
-	printf("%s\r\n", menu_direction_to_string(direction));
-	return direction;
-}
-
