@@ -1,20 +1,23 @@
 #include "sam.h"
-#include "../node1/io_driver.h"
-#include "can.h"
 #include "ir_driver.h"
-
-void adc_init(void){
-	PMC->PMC_PCER1 = (1 << (ID_ADC - 32)); // ID starter på 32, må derfor skiftes (ID-32), aktiverer klokken til ID
-
-	ADC->ADC_MR = ADC_MR_FREERUN_ON          // måler kontinuerlig
-                | ADC_MR_PRESCAL(2);         // ADC-klokke = 84 MHz / ((2+1)*2) = 14 MHz (Kan maks være 22 MHz, s.1403)
-
-	ADC->ADC_CHER = ADC_CHER_CH7; //Aktiverer kanal 7 (PA16/ADC[0], s.40)
-	ADC->ADC_CR = ADC_CR_START; //starter adc conversion
-
+ 
+ 
+// Turns on the ADC in free running mode on channel 7, so it measures continuously.
+void adc_init(void)
+{
+    // Clock to the ADC. ID_ADC is 37, above 31, so it is in PCER1
+    PMC->PMC_PCER1 = (1 << (ID_ADC - 32));
+ 
+    ADC->ADC_MR = ADC_MR_FREERUN_ON          // new conversion as soon as one is done
+                | ADC_MR_PRESCAL(2);         // ADC clock = 84 MHz / ((2+1)*2) = 14 MHz (max 22 MHz) p. 1403 in arduino Due datasheet
+ 
+    ADC->ADC_CHER = ADC_CHER_CH7;            // enable channel 7 (A0 / PA16) p. 40 in arduino Due datasheet
+    ADC->ADC_CR   = ADC_CR_START;            // start converting
 }
-
+ 
+ 
+// Returns the latest measurement from the IR receiver, 0-4095 (0-3.3 V). Because of our choice of recistance, we get values in the range of 0-1300 ish
 uint16_t adc_read(void)
 {
-    return ADC->ADC_CDR[7];                  // siste måling fra kanal 7, går fra 0 til 4095 (3,3 V)
+    return ADC->ADC_CDR[7];
 }

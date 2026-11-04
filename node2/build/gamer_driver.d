@@ -72,5 +72,5 @@ build/gamer_driver.o: gamer_driver.c sam/sam3x/include/sam.h \
  sam/sam3x/include/instance/instance_wdt.h \
  sam/sam3x/include/instance/instance_rtc.h \
  sam/sam3x/include/instance/instance_gpbr.h \
- sam/sam3x/include/pio/pio_sam3x8e.h ../node1/io_driver.h can.h \
- gamer_driver.h ir_driver.h timer_driver.h motor.h encoder.h solenoid.h
+ sam/sam3x/include/pio/pio_sam3x8e.h gamer_driver.h timer_driver.h \
+ motor.h solenoid.h
