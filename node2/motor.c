@@ -177,6 +177,16 @@ void motor_update_joystick(int8_t new_joystick) {
 
 }
 
+// Uses the touch pad as an absolute position: -100 % to 100 %. In Extreme mode the pad works like the joystick instead.
+void motor_update_touch(int8_t percent) {
+    if (open_loop) {
+        joy = percent;
+        return;
+    }
+    joy = 0;    // the joystick must not move the reference as well
+    reference = POS_MIN + (float)(percent + 100) * (POS_MAX - POS_MIN) / 200.0f;
+}
+
 // Drives the slider to the end of the track, sets the encoder to 0 there and resets the controller. Can be called both before and after timer_init().
 void motor_home(void)
 {

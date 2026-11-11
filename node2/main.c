@@ -60,12 +60,17 @@ int main()
 		//Messages from node 1
         if (can_rx(&msg)) {
 			if (msg.id == CAN_ID_JOYSTICK) {
-				int8_t xpercentage = (int8_t)msg.byte[0];
-				int8_t ypercentage = (int8_t)msg.byte[1];
+				int8_t servo_input = (int8_t)msg.byte[0];
+				int8_t motor_input = (int8_t)msg.byte[1];
 				uint8_t solenoid_button_pressed = msg.byte[2];
 
-				joystick_to_PWM(xpercentage);		// servo
-				motor_update_joystick(ypercentage);		// motor reference
+				joystick_to_PWM(servo_input);
+
+				if (setting_controller == 1) {
+    				motor_update_touch(motor_input);     // touch pad: absolute position
+				} else {
+					motor_update_joystick(motor_input);           // joystick: moves the reference
+				}
 
 				// Fire only when the button goes from released to pressed
 				if (solenoid_button_pressed && !last_solenoid_button) {

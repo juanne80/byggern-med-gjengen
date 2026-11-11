@@ -77,13 +77,24 @@ int main(void) {
 	uint16_t last_time = 0xFFFF;
 	
 	menu_draw();
+
+	uint8_t active_controller = 0;   // controller node 2 is using (sent at the last game start)
  
     while (1) {
 
-        // Send joystick and solenoid button to node 2
-		JoystickPosition pos = joystick_get_position();
-		joystick_msg.data[0] = pos.x;
-		joystick_msg.data[1] = pos.y;
+		//Send touchpad or joystick position to node 2 (dependent on chosen settings)
+		if (active_controller == 1) {
+			TouchPosition touch = touchpad_get_position();
+			joystick_msg.data[0] = touch.y;        
+			joystick_msg.data[1] = touch.x;        
+		} else {
+			JoystickPosition pos = joystick_get_position();
+			joystick_msg.data[0] = pos.x;          
+			joystick_msg.data[1] = pos.y;          
+		}
+
+
+        // Send solenoid button to node 2
 		joystick_msg.data[2] = solenoid_button_pressed();
 		can_send(&joystick_msg);
 
@@ -118,6 +129,7 @@ int main(void) {
 				};
 
 				can_send(&settings_msg);
+				active_controller = setting_controller;
 
 				// Node 2 drives the slider to its start position before the game starts
 				oled_reset();

@@ -46,7 +46,7 @@ Menu choose_player = {
     .parent = NULL
 };
  
-const char* controller_items[] = { "Joystick", "Touch slider" }; //Touch slider is not implemented yet
+const char* controller_items[] = { "Joystick", "Touchpad" }; 
 Menu controller = {
     .items = controller_items,
     .num_items = 2,
@@ -59,7 +59,7 @@ Menu difficulty = {
     .items = difficulty_items,
     .num_items = 4,
     .submenus = NULL,
-    .parent = NULL
+    .parent = NULL// motor
 };
  
  

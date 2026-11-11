@@ -38,7 +38,7 @@ static uint8_t buttons_left;    // [0 L7 L6 L5 L4 L3 L2 L1]
 static uint8_t buttons_nav;     // [0 0 0 Up Down Left Right Btn]
 
 
-// JOYSTICK SECTION
+// JOYSTICK AND TOUCHPAD SECTION
 
 // Starts a conversion, waits for BUSY (PD4) and reads all four ADC channels.
 void adc_read_all_channels(uint8_t *results) {
@@ -92,7 +92,7 @@ int joystickpos_to_percentage(uint8_t raw, uint8_t center)
     return result;
 }
 
-// Returns the joystick position as -100..100 % in x and y.
+// Returns the joystick position as -100..100 %
 JoystickPosition joystick_get_position(void) {
 
 	uint8_t results[4];
@@ -103,6 +103,27 @@ JoystickPosition joystick_get_position(void) {
 	pos.y = joystickpos_to_percentage(results[CH_JOYSTICK_Y], center_y);
 	return pos;
 }
+
+
+
+// Converts a raw touch pad ADC value (0-255) to -100..100 %
+int16_t touchpadpos_to_percentage(uint8_t raw)
+{
+    return (int16_t)raw * 40 / 51 - 100;   // 200/255 = 40/51
+}
+
+// Returns the touchpad position as -100..100 % in x and y.
+TouchPosition touchpad_get_position(void) {
+
+	uint8_t results[4];
+	adc_read_all_channels(results);
+
+	TouchPosition pos;
+	pos.x = touchpadpos_to_percentage(results[CH_TOUCH_Y]);
+	pos.y = touchpadpos_to_percentage(results[CH_TOUCH_X]);
+	return pos;
+}
+
 
 
 
@@ -183,12 +204,6 @@ JoystickDirection joystick_get_direction(void) {
 
 	return NEUTRAL;
 } 
-
-
-int touchpadpos_to_percentage(uint8_t voltage)
-{
-	return round(200/5 * (voltage - 2.5));
-}
 
 
 void light_correct_lights(void) {
