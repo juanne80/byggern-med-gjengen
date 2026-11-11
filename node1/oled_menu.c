@@ -59,7 +59,7 @@ Menu difficulty = {
     .items = difficulty_items,
     .num_items = 4,
     .submenus = NULL,
-    .parent = NULL// motor
+    .parent = NULL
 };
  
  
@@ -251,8 +251,7 @@ void menu_handle_input(MenuJoystickDirection menujoystickdirection) {
 
 		case MENU_LEFT:  // back to the parent menu
             if (current_menu->parent != NULL) {
-                current_menu = current_menu->parent;
-                selected = 0;
+                go_to_parent();
             }
 			break;
 		

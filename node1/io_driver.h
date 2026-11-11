@@ -37,7 +37,7 @@ void adc_read_all_channels(uint8_t *results);
 void joystick_calibrate(void);
 int joystickpos_to_percentage(uint8_t raw, uint8_t center);
 JoystickPosition joystick_get_position(void);
-int touchpadpos_to_percentage(uint8_t voltage);
+int16_t touchpadpos_to_percentage(uint8_t voltage);
 TouchPosition touchpad_get_position(void);
  
 void io_read_buttons(void);

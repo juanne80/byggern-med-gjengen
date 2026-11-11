@@ -15,8 +15,8 @@
 #define ADC_ADDRESS 0x1000
 #define CH_JOYSTICK_X 2
 #define CH_JOYSTICK_Y 3
-#define CH_TOUCH_X 1
-#define CH_TOUCH_Y 0
+#define CH_TOUCH_X 0
+#define CH_TOUCH_Y 1
 
 // Joystick limits measured on the ADC
 #define JOY_RAW_MIN     69
@@ -119,8 +119,8 @@ TouchPosition touchpad_get_position(void) {
 	adc_read_all_channels(results);
 
 	TouchPosition pos;
-	pos.x = touchpadpos_to_percentage(results[CH_TOUCH_Y]);
-	pos.y = touchpadpos_to_percentage(results[CH_TOUCH_X]);
+	pos.x = touchpadpos_to_percentage(results[CH_TOUCH_X]);
+	pos.y = touchpadpos_to_percentage(results[CH_TOUCH_Y]);
 	return pos;
 }
 
