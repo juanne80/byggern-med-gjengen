@@ -13,6 +13,8 @@ v1.00       2003/12/11  Initial release
 Copyright 2003 Kimberly Otten Software Consulting
 */
 
+//We (group 32) have modified this file to fit our project. We have not deleted anything, but added useful adresses. 
+
 // Define MCP2515 register addresses
 
 #define MCP_RXF0SIDH	0x00

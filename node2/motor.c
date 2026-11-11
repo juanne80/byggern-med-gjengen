@@ -110,8 +110,12 @@ int8_t pid_regulator(int32_t pos, int32_t ref)
     if (ki > 0.0f) {
         integral += e * T;
         float i_max = U_MAX / ki;            // anti-windup
-        if (integral >  i_max) integral =  i_max;
-        if (integral < -i_max) integral = -i_max;
+        if (integral >  i_max) {
+			integral =  i_max;
+		}
+        if (integral < -i_max) {
+			integral = -i_max;
+		}
         u += ki * integral;
     }
  
@@ -172,7 +176,7 @@ void motor_update_joystick(int8_t new_joystick) {
 	joy = new_joystick;
 	if (++count >= 25) {                     
         count = 0;
-        printf("joy=%d ref=%d pos=%d\r\n", new_joystick, (int)reference, (int)encoder_read());
+        // printf("joy=%d ref=%d pos=%d\r\n", new_joystick, (int)reference, (int)encoder_read());
     }
 
 }
